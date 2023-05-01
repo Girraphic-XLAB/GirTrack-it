@@ -16,20 +16,18 @@ class FreeD:
     reserved: 'bytes'
 
     def __init__(self, pitch: 'int', yaw: 'int', roll: 'int', pos_z: 'int',  pos_y: 'int', pos_x: 'int', zoom: 'int', focus: 'int') -> None:
-        # if (any([x > 0xFFFFFF or x < 0x00 for x in [pitch, yaw, roll, pos_z, pos_y, pos_x, zoom, focus]])):
-        #     raise ValueError("Maximum of 3 bytes allowed in location fields")
 
         self.identifier = b'\xD1'
         self.cameraID = b'\xFF'
         self.reserved = b'\x00\x00'
-        self.pitch = pitch.to_bytes(3, 'big', signed=True)
-        self.yaw = yaw.to_bytes(3, 'big', signed=True)
-        self.roll = roll.to_bytes(3, 'big', signed=True)
-        self.pos_z = pos_z.to_bytes(3, 'big', signed=True)
-        self.pos_y = pos_y.to_bytes(3, 'big', signed=True)
-        self.pos_x = pos_x.to_bytes(3, 'big', signed=True)
-        self.zoom = zoom.to_bytes(3, 'big', signed=False)
-        self.focus = focus.to_bytes(3, 'big', signed=False)
+        self.pitch = pitch.to_bytes(4, 'big', signed=True)
+        self.yaw = yaw.to_bytes(4, 'big', signed=True)
+        self.roll = roll.to_bytes(4, 'big', signed=True)
+        self.pos_z = pos_z.to_bytes(4, 'big', signed=True)
+        self.pos_y = pos_y.to_bytes(4, 'big', signed=True)
+        self.pos_x = pos_x.to_bytes(4, 'big', signed=True)
+        self.zoom = zoom.to_bytes(4, 'big', signed=False)
+        self.focus = focus.to_bytes(4, 'big', signed=False)
 
     #calculates a checksum according to the protocol
     @staticmethod
@@ -51,9 +49,8 @@ class FreeD:
         serial = self.identifier + self.cameraID + self.pitch + self.yaw + \
             self.roll + self.pos_z + self.pos_y + self.pos_x + self.zoom + \
             self.focus + self.reserved + FreeD.checksum(*data)
-        assert (len(serial) == 29)  # somethings gone wrong if not
+        assert (len(serial) == 37)  # somethings gone wrong if not
         return serial
-
 
 # int type that is limited to 3 bytes (sort of a hack)
 class ThreeBytes(int):
@@ -91,29 +88,63 @@ class ThreeBytesSigned(ThreeBytes):
     INT_MAX: 'int' = 8388608
     INT_MIN: 'int' = -8388608
 
+# int type that is limited to 4 bytes (sort of a hack)
+class FourBytes(int):
+    field: 'int'
+    INT_MAX: 'int' = 0xFFFFFFFF
+    INT_MIN: 'int' = 0x00
+
+    def __init__(self, new: 'int'):
+        if (new > self.INT_MAX or new < self.INT_MIN):
+            raise ValueError("Maximum of 3 bytes allowed!")
+
+        self.field = new
+
+    def __add__(self, __x: int) -> int:
+
+        if (self.field + __x > self.INT_MAX or self.field + __x < self.INT_MIN):
+            raise OverflowError("Resulting value would be too large to store!")
+        return self.field + __x
+
+    def __sub__(self, __x: int) -> int:
+        if (self.field - __x > self.INT_MAX or self.field - __x < self.INT_MIN):
+            raise OverflowError("Resulting value would be too large to store!")
+        return self.field - __x
+
+    def __mul__(self, __x: int) -> int:
+        if (self.field * __x > self.INT_MAX or self.field * __x < self.INT_MIN):
+            raise OverflowError("Resulting value too large to store!")
+        return self.field * __x
+    
+    def to_bytes(self, length: SupportsIndex, byteorder: Literal["little", "big"], *, signed: bool = ...) -> bytes:
+        return self.field.to_bytes(length, byteorder, signed=signed)
+
+#signed variant of 4bytetype
+class FourBytesSigned(FourBytes):
+    INT_MAX: 'int' = 2147483647
+    INT_MIN: 'int' = -2147483648
+
 # native types for FreeD raw bytes
 class FreeDWrapper:
-    pitch: 'ThreeBytesSigned'
-    yaw: 'ThreeBytesSigned'
-    roll: 'ThreeBytesSigned'
-    pos_z: 'ThreeBytesSigned'
-    pos_x: 'ThreeBytesSigned'
-    pos_y: 'ThreeBytesSigned'
-    zoom: 'ThreeBytes'
-    focus: 'ThreeBytes'
+    pitch: 'FourBytesSigned'
+    yaw: 'FourBytesSigned'
+    roll: 'FourBytesSigned'
+    pos_z: 'FourBytesSigned'
+    pos_x: 'FourBytesSigned'
+    pos_y: 'FourBytesSigned'
+    zoom: 'FourBytes'
+    focus: 'FourBytes'
 
     def __init__(self, pitch: 'int', yaw: 'int', roll: 'int', pos_z: 'int',  pos_y: 'int', pos_x: 'int', zoom: 'int', focus: 'int') -> None:
-        # if (any([x > 0xFFFFFF or x < 0x00 for x in [pitch, yaw, roll, pos_z, pos_y, pos_x, zoom, focus]])):
-        #     raise ValueError("Maximum of 3 bytes allowed in location fields")
-
-        self.pitch = ThreeBytesSigned(pitch)
-        self.yaw = ThreeBytesSigned(yaw)
-        self.roll = ThreeBytesSigned(roll)
-        self.pos_z = ThreeBytesSigned(pos_z)
-        self.pos_y = ThreeBytesSigned(pos_y)
-        self.pos_x = ThreeBytesSigned(pos_x)
-        self.zoom = ThreeBytes(zoom)
-        self.focus = ThreeBytes(focus)
+        
+        self.pitch = FourBytesSigned(pitch)
+        self.yaw = FourBytesSigned(yaw)
+        self.roll = FourBytesSigned(roll)
+        self.pos_z = FourBytesSigned(pos_z)
+        self.pos_y = FourBytesSigned(pos_y)
+        self.pos_x = FourBytesSigned(pos_x)
+        self.zoom = FourBytes(zoom)
+        self.focus = FourBytes(focus)
 
     #returns a struct with byte representations of fields, ready to encode into an array.
     def createFreeD(self) -> 'FreeD':
