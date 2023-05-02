@@ -22,7 +22,7 @@ KEYMAPS = """
 
            Press Ctrl-C to exit.
 """
-KEYS = {b'\x77': 'w', b'\x61': 'a', b'\x73': "s", b'\x64': "d", b'\x71': "q", b'\x65': "e", b"\x09": "TAB", b'\x16': "SHIFT", 
+KEYS = {b'\x77': 'w', b'\x61': 'a', b'\x73': "s", b'\x64': "d", b'\x71': "q", b'\x65': "e", b"\x09": "TAB", b'\x20': "SPACE", 
         b'\x7a': "z", b'\x63':"c", b'\x76':"v", 'b\x62': "b", b'\x66': "f", b'\x67':"g", b'\x3d': '+', b'\x2d': '-'}
 
 
@@ -68,7 +68,7 @@ if __name__ == "__main__":
                     struct.pos_x += 1*unit
                     bits = struct.createFreeD().encode()
 
-                case 'SHIFT':
+                case 'SPACE':
                     struct.pos_x -= 1*unit
                     bits = struct.createFreeD().encode()
                 case 'f':
