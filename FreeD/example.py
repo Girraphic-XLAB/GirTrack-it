@@ -34,7 +34,7 @@ if __name__ == "__main__":
     bits: 'bytes' = struct.createFreeD().encode()
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    unit = 1000
+    unit = 1*64*10
     print("Key", "    ", "Scale:", unit, "Packet", bits.hex(':'), end="\r")
     while (True):
         ch = msvcrt.getch()

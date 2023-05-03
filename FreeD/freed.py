@@ -3,7 +3,6 @@ from typing import Literal, SupportsIndex
 
 #stores raw bytes for encoding. Use the FreeDWrapper as an interface for regular ints
 class FreeD:
-    identifier: 'bytes'
     cameraID: 'bytes'
     pitch: 'bytes'
     yaw: 'bytes'
@@ -13,13 +12,10 @@ class FreeD:
     pos_x: 'bytes'
     zoom: 'bytes'
     focus: 'bytes'
-    reserved: 'bytes'
 
     def __init__(self, pitch: 'int', yaw: 'int', roll: 'int', pos_z: 'int',  pos_y: 'int', pos_x: 'int', zoom: 'int', focus: 'int') -> None:
 
-        self.identifier = b'\xD1'
         self.cameraID = b'\xFF'
-        self.reserved = b'\x00\x00'
         self.pitch = pitch.to_bytes(4, 'big', signed=True)
         self.yaw = yaw.to_bytes(4, 'big', signed=True)
         self.roll = roll.to_bytes(4, 'big', signed=True)
@@ -42,14 +38,15 @@ class FreeD:
 
     #encodes self into an array of bytes
     def encode(self) -> 'bytes':
-        data = (self.identifier, self.cameraID, self.pitch, self.yaw,
+        data = (self.cameraID, self.pitch, self.yaw,
                 self.roll, self.pos_z, self.pos_y, self.pos_x, self.zoom,
-                self.focus, self.reserved)
+                self.focus, )
 
-        serial = self.identifier + self.cameraID + self.pitch + self.yaw + \
+        serial = self.cameraID + self.pitch + self.yaw + \
             self.roll + self.pos_z + self.pos_y + self.pos_x + self.zoom + \
-            self.focus + self.reserved + FreeD.checksum(*data)
-        assert (len(serial) == 37)  # somethings gone wrong if not
+            self.focus
+        # + FreeD.checksum(*data)
+        # assert (len(serial) == 37)  # somethings gone wrong if not
         return serial
 
 # int type that is limited to 3 bytes (sort of a hack)
